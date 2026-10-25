@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Apuração Brasil 2026 · The Globe in Brief</title>
-<meta name="description" content="Live map of Brazil's 2026 presidential runoff count with tie-line benchmarks, from official TSE data.">
+<meta name="description" content="Live map of Brazil's 2026 presidential runoff: battlegrounds, tie lines and every city, from official TSE data.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root { color-scheme: light; } body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }
-/* Layout: scoreboard + pace estimate, then "where it's decided" (regions, key places, watch list), then map + state table */
+/* Layout: scoreboard + estimate → regions → battleground cards → national map + city drill-down → full state table */
 :root {
   --bg: #f4f6f3;
   --panel: #ffffff;
@@ -41,25 +41,27 @@
 
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
-.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 40px;
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 40px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: grid; gap: 18px; }
+  display: grid; gap: 22px; }
 .num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
 
 header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1; margin: 4px 0 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
-h2 { font-family: var(--display); font-weight: 600; font-size: 21px; text-transform: uppercase; letter-spacing: .03em; margin: 0; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 23px; text-transform: uppercase; letter-spacing: .03em; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--display); font-weight: 600; font-size: 20px; text-transform: uppercase; letter-spacing: .02em; margin: 0; }
 .sechead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 10px; }
-.sechead p { margin: 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.sechead p { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 72ch; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
-.seg button { font: 600 13px/1 var(--body); letter-spacing: .02em; padding: 9px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { font: 600 12.5px/1 var(--body); letter-spacing: .02em; padding: 8px 11px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.seg.small button { font-size: 12px; padding: 7px 10px; }
 .btn { font: 600 13px/1 var(--body); padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; }
 .btn:hover, .seg button:hover { filter: brightness(.96); }
-button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--c22); outline-offset: 2px; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--c22); outline-offset: 2px; }
+input[type="search"] { font: 14px var(--body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); min-width: 0; width: 220px; max-width: 100%; }
 
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
 .pill { display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 9px; border-radius: 999px; border: 1px solid currentColor; }
@@ -80,6 +82,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 .notice.err { border-color: var(--bad); background: color-mix(in oklab, var(--bad) 9%, var(--panel)); }
 .notice a { color: inherit; font-weight: 600; }
 
+/* Scoreboard */
 .board { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px 18px; display: grid; gap: 14px; }
 .cands { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .cand { display: grid; gap: 2px; min-width: 0; }
@@ -90,15 +93,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 .cand .pct { font-family: var(--display); font-weight: 700; font-size: clamp(44px, 9vw, 76px); line-height: .95; }
 .cand .votes { font-family: var(--mono); font-size: 13px; color: var(--muted); }
 .lead { font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; color: var(--bg); }
-.split { position: relative; height: 18px; border-radius: 4px; overflow: hidden; background: var(--track); display: flex; }
+.split { position: relative; height: 18px; border-radius: 4px; overflow: hidden; background: var(--track); display: flex; justify-content: space-between; }
 .split > i { height: 100%; transition: width .6s ease; }
 .split::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--ink); transform: translateX(-1px); }
+.split.thin { height: 8px; border-radius: 3px; }
+.split.thin::after { top: -1px; bottom: -1px; }
 .boardfoot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 18px; font-size: 13px; color: var(--muted); }
 .boardfoot b { color: var(--ink); font-weight: 600; }
-.others { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
-.others span b { color: var(--ink); font-weight: 600; }
-
-/* Pace estimate strip inside the scoreboard */
 .pace { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 18px; align-items: center; }
 .pace .k { font: 600 11.5px/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .pace .v { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.1; }
@@ -107,33 +108,44 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 
 .chip { display: inline-block; font: 600 12px/1 var(--mono); padding: 4px 7px; border-radius: 5px; white-space: nowrap; }
 .chip.even { color: var(--muted); border: 1px solid var(--line); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; flex: none; }
 
-/* Where it's decided */
-.decide { display: grid; gap: 14px; }
-.regions { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.reg { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 6px; min-width: 0; }
+/* Regions */
+.regions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.reg { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 7px; min-width: 0; align-content: start; }
 .reg .nm { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.reg .nm b { font-family: var(--display); font-size: 19px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
-.reg .nm span { font: 500 11.5px/1 var(--mono); color: var(--muted); }
-.reg .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
-.reg .row b { color: var(--ink); font-weight: 600; }
-.reg .mini { height: 5px; background: var(--track); border-radius: 3px; overflow: hidden; }
-.reg .mini i { display: block; height: 100%; background: var(--muted); }
+.reg .nm b { font-family: var(--display); font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+.reg .nm span, .lbl2 { font: 500 11.5px/1.2 var(--mono); color: var(--muted); }
+.vrow { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; align-items: baseline; }
+.vrow .who { display: flex; align-items: baseline; min-width: 0; }
+.vrow .v { font-variant-numeric: tabular-nums; text-align: right; }
+.vrow .v b { font-weight: 600; }
+.vrow .v span { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.kv { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.kv b { color: var(--ink); font-weight: 600; }
 
-.cols2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 880px) { .cols2 { grid-template-columns: minmax(0, 1fr); } }
+/* Battleground cards */
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.bcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 9px; align-content: start; min-width: 0; }
+.bcard .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.bcard .kind { font: 500 11px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.bcard .why { margin: 0; font-size: 13.5px; color: var(--ink); }
+.bcard .live { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.bcard .foot { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.bcard .foot b { color: var(--ink); font-weight: 600; }
+
+/* Maps */
+.maps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 960px) { .maps { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 880px) { .cands { gap: 10px; } }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
-.watch { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
-.watch li { display: grid; gap: 2px; font-size: 13.5px; }
-.watch li b { font-family: var(--display); font-size: 17px; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
-.watch li span { color: var(--muted); }
-
-.main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 880px) { .main { grid-template-columns: minmax(0, 1fr); } .cands { gap: 10px; } }
 .mapbox { position: relative; }
 svg.map { display: block; width: 100%; height: auto; max-width: 100%; }
-svg.map path.uf { stroke: var(--stroke); stroke-width: 1.4; stroke-linejoin: round; cursor: pointer; transition: fill .5s ease; }
-svg.map path.uf:hover, svg.map path.uf.sel { stroke: var(--ink); stroke-width: 2.6; }
+svg.map path { stroke: var(--stroke); stroke-linejoin: round; cursor: pointer; transition: fill .5s ease; }
+svg.map path.uf { stroke-width: 1.4; }
+svg.map path.mu { stroke-width: .35; }
+svg.map path.uf:hover, svg.map path.sel { stroke: var(--ink); stroke-width: 2.6; }
+svg.map path.mu:hover, svg.map path.mu.sel { stroke: var(--ink); stroke-width: 1.4; }
 svg.map text { font: 600 15px var(--body); fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; pointer-events: none; }
 svg.map text.sm { font-size: 12.5px; }
 .flash { animation: flash 1.2s ease-out; }
@@ -141,32 +153,39 @@ svg.map text.sm { font-size: 12.5px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); margin-top: 8px; align-items: center; }
 .ramp { display: inline-flex; gap: 2px; align-items: center; }
 .ramp i { width: 16px; height: 10px; display: inline-block; border-radius: 2px; }
-.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; box-shadow: 0 6px 24px rgb(0 0 0 / .14); min-width: 200px; max-width: 270px; z-index: 5; }
-.tip h3 { margin: 0 0 6px; font-family: var(--display); font-size: 18px; font-weight: 600; text-transform: uppercase; }
-.tip .row, .detail .row { display: flex; justify-content: space-between; gap: 12px; }
-.tip .sub { color: var(--muted); font-family: var(--mono); font-size: 11.5px; margin-top: 6px; }
-.detail { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 13.5px; display: grid; gap: 4px; }
-.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; box-shadow: 0 6px 24px rgb(0 0 0 / .14); min-width: 210px; max-width: 280px; z-index: 5; display: grid; gap: 3px; }
+.tip h4 { margin: 0 0 4px; font-family: var(--display); font-size: 18px; font-weight: 600; text-transform: uppercase; }
+.tip .sub { color: var(--muted); font-family: var(--mono); font-size: 11.5px; margin-top: 4px; }
+.drillhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 14px; margin-bottom: 8px; }
+.crumb { font: 500 12px/1.3 var(--mono); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.crumb button { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.empty { display: grid; place-items: center; min-height: 260px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 10px; padding: 20px; }
+.loadbar { height: 4px; background: var(--track); border-radius: 2px; overflow: hidden; margin: 4px 0 8px; }
+.loadbar i { display: block; height: 100%; background: var(--ink); width: 0; transition: width .3s; }
+.statsum { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 
+/* Tables */
 .tablewrap { overflow-x: auto; }
+.tablewrap.tall { max-height: 460px; overflow-y: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-th, td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th, td { padding: 7px 9px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
-th { font: 600 11.5px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+th { font: 600 11.5px/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--panel); position: sticky; top: 0; z-index: 1; }
 th button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 th button[aria-sort] { color: var(--ink); }
+th.l13 { color: var(--c13); } th.l22 { color: var(--c22); }
 tbody tr.click { cursor: pointer; }
 tbody tr.click:hover, tbody tr.sel { background: color-mix(in oklab, var(--ink) 5%, transparent); }
-tr.sub td:first-child { padding-left: 26px; color: var(--muted); }
 td .uf { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 4px; }
+td.grp { border-left: 1px solid var(--line); }
 .cnt { display: inline-flex; align-items: center; gap: 6px; }
 .cnt .mini { width: 34px; height: 5px; background: var(--track); border-radius: 3px; overflow: hidden; }
 .cnt .mini i { display: block; height: 100%; background: var(--muted); }
-.muted { color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
 
 details.method { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
 details.method summary { cursor: pointer; font-family: var(--display); font-weight: 600; font-size: 18px; text-transform: uppercase; letter-spacing: .03em; }
-details.method p { margin: 8px 0 0; max-width: 78ch; color: var(--ink); }
+details.method p { margin: 8px 0 0; max-width: 78ch; }
 footer { font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
 footer a { color: var(--ink); }
 </style>
@@ -176,11 +195,9 @@ footer a { color: var(--ink); }
   <header>
     <div>
       <div class="eyebrow">Eleições 2026 · Presidente · Dados oficiais do TSE</div>
-      <h1 id="title">Apuração · 2º Turno · Oct 25</h1>
+      <h1>Apuração · 2º Turno · Oct 25</h1>
     </div>
-    <div class="controls">
-      <button type="button" class="btn" id="refresh">Refresh now</button>
-    </div>
+    <div class="controls"><button type="button" class="btn" id="refresh">Refresh now</button></div>
   </header>
 
   <div class="status">
@@ -201,36 +218,34 @@ footer a { color: var(--ink); }
     <div class="cands" id="cands"></div>
     <div class="split" id="split" aria-hidden="true"></div>
     <div class="boardfoot" id="bfoot"></div>
-    <div class="others" id="others" hidden></div>
-    <div class="pace" id="pace" hidden></div>
+    <div class="pace" id="pace"></div>
   </section>
 
-  <section class="decide" id="decide" aria-label="Where the election is decided">
+  <section aria-label="Regions">
     <div class="sechead">
-      <h2>Where it's decided</h2>
-      <p id="decidenote">Each area has a <b>tie line</b>: the share Lula needs there for a 50–50 national race, based on the October 4 vote and how each state moved between rounds in 2022. Flávio needs the rest. "Pace" shows who is running ahead of that line.</p>
+      <h2>The five regions</h2>
+      <p>Each place has a <b>tie line</b>: the split it needs to show for a 50–50 national race, based on the October 4 vote and how each state moved between rounds in 2022. <b>Pace</b> shows who is running ahead of that line.</p>
     </div>
     <div class="regions" id="regions"></div>
-    <div class="cols2">
-      <div class="card">
-        <div class="sechead"><h2>Key places</h2><p>Biggest cities and the interiors that decide São Paulo, Rio and Minas.</p></div>
-        <div class="tablewrap"><table><thead><tr id="khead"></tr></thead><tbody id="kbody"></tbody></table></div>
-      </div>
-      <div class="card">
-        <div class="sechead"><h2>What to watch</h2></div>
-        <ul class="watch" id="watch"></ul>
-      </div>
-    </div>
   </section>
 
-  <div class="main">
-    <section class="card">
+  <section aria-label="Key places and battlegrounds">
+    <div class="sechead">
+      <h2>Key places and battlegrounds</h2>
+      <p>The states, cities and blocs where the runoff is likely to be won or lost, with live votes for each side.</p>
+    </div>
+    <div class="bgrid" id="battle"></div>
+  </section>
+
+  <section class="maps" aria-label="Maps">
+    <div class="card">
       <div class="sechead">
-        <h2>Map</h2>
-        <div class="seg small" role="group" aria-label="Map view">
-          <button type="button" data-view="results" aria-pressed="true">Leader</button>
-          <button type="button" data-view="pace" aria-pressed="false">Vs. tie line</button>
-          <button type="button" data-view="counted" aria-pressed="false">Counted</button>
+        <h2>Brazil by state</h2>
+        <div class="seg" role="group" aria-label="National map view" id="natviews">
+          <button type="button" data-view="results">Live leader</button>
+          <button type="button" data-view="pace">Vs. tie line</button>
+          <button type="button" data-view="r1">Oct 4</button>
+          <button type="button" data-view="counted">Counted</button>
         </div>
       </div>
       <div class="mapbox" id="mapbox">
@@ -238,29 +253,50 @@ footer a { color: var(--ink); }
         <div class="tip" id="tip" hidden></div>
       </div>
       <div class="legend" id="legend"></div>
-      <div class="detail" id="detail" hidden></div>
-    </section>
-    <section class="card">
-      <div class="sechead"><h2>All states</h2><p id="statenote">Sorted by how many votes a one-point swing there moves.</p></div>
-      <div class="tablewrap">
-        <table>
-          <thead><tr id="thead"></tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
+    </div>
+    <div class="card" id="drill">
+      <div class="drillhead">
+        <div>
+          <div class="crumb" id="crumb">Brasil</div>
+          <h2 id="drilltitle">Every city</h2>
+        </div>
+        <div class="seg" role="group" aria-label="City map view" id="muviews" hidden>
+          <button type="button" data-mview="results">Live leader</button>
+          <button type="button" data-mview="pace">Vs. tie line</button>
+          <button type="button" data-mview="r1">Oct 4</button>
+        </div>
       </div>
-    </section>
-  </div>
+      <div id="drillbody"><div class="empty">Click any state on the map or in the table to see all of its municipalities, live.</div></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="All states">
+    <div class="sechead">
+      <h2>All states</h2>
+      <p>Click a row to open its cities on the map. Columns sort.</p>
+    </div>
+    <div class="tools">
+      <input type="search" id="q" placeholder="Find a state" aria-label="Find a state">
+      <div class="seg" role="group" aria-label="Filter by region" id="regfilter"></div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
 
   <details class="method">
     <summary>How the tie lines and estimate work</summary>
-    <p><b>Tie line.</b> Start with each state's split between Lula and Flávio on October 4 (other candidates left out). Add the extra movement that state showed between the two rounds in 2022, compared with the country as a whole. Then shift every state by the same amount so the country adds up to exactly 50–50. The result is the share Lula needs in that place to be on track for a tie. Cities and interiors use their own October 4 split with their state's 2022 movement.</p>
+    <p><b>Tie line.</b> Start with each place's split between Lula and Flávio on October 4, leaving out the other candidates. Add the extra movement that state showed between the two rounds in 2022, compared with the country as a whole. Then shift every state by the same amount so the country adds up to exactly 50–50. The result is the split that place needs for the race to be tied. Cities and the rest-of-state blocs use their own October 4 split with their state's 2022 movement.</p>
     <p><b>Pace.</b> The live two-candidate share minus the tie line. "Lula +2.0" means Lula is running 2 points better there than a tied race requires; "Flávio +2.0" means the reverse.</p>
-    <p><b>Estimated finish.</b> Each state's result so far is blended with its tie line, adjusted by how far the counted states are running from their lines, and weighted by how many votes the state cast on October 4. It corrects for the fact that states finish counting at different speeds. It is a rough guide, not a projection by the TSE or any news outlet. It can mislead when turnout differs from October 4 or when the early votes inside a state come mostly from its cities.</p>
-    <p><b>Sources.</b> Live and October 4 figures: TSE results feed. 2022 state results: TSE final results as summarized by Santander's post-election report.</p>
+    <p><b>Estimated finish.</b> Each state's result so far is blended with its tie line, adjusted by how far the counted states are running from their lines, and weighted by how many votes the state cast on October 4. It corrects for states finishing their counts at different speeds. It is a rough guide, not a projection by the TSE or any news outlet, and it can mislead when turnout differs from October 4 or when the early votes inside a state come mostly from its cities.</p>
+    <p><b>Sources.</b> Live and October 4 figures: TSE results feed. 2022 state results: TSE final results as summarized in Santander's post-election report. City boundaries: IBGE.</p>
   </details>
 
   <footer>
-    <span id="foot">Figures come from the TSE results feed (resultados.tse.jus.br) and refresh every 30 seconds while results are coming in. Percentages are of valid votes. This page does not call the race.</span>
+    <span>Figures come from the TSE results feed (resultados.tse.jus.br) and refresh every 30 seconds while results are coming in; an open state's cities refresh every minute. Percentages are of valid votes. This page does not call the race.</span>
     <span>Official results: <a href="https://resultados.tse.jus.br/oficial/app/index.html" target="_blank" rel="noopener">Resultados TSE</a>. Polls close 5 PM Brasília (4 PM ET).</span>
   </footer>
 </div>
@@ -277,16 +313,50 @@ const REGIONS = [
   { id: "co", nm: "Centro-Oeste", ufs: ["df","go","ms","mt"] },
   { id: "n",  nm: "Norte", ufs: ["ac","am","ap","pa","ro","rr","to"] },
 ];
-const KEY_MUNS = ["sp71072","sp62910","rj60011","mg41238","ba38490","ce13897","pe25313","pr75353","rs88013","go93734","am02550","pa04278"];
-const ROUNDS = { 2: { code: "6258", label: "2º Turno" }, 1: { code: "6257", label: "1º Turno" } };
+const REGION_OF = { zz: "Exterior" };
+REGIONS.forEach(R => R.ufs.forEach(u => REGION_OF[u] = R.nm));
+
+/* Battlegrounds. {share}, {oct4}, {net} and {netwho} are filled from the October 4 data. */
+const BATTLE = [
+  { id: "mg", kind: "uf", uf: "mg", nm: "Minas Gerais", type: "State",
+    why: "Brazil's bellwether: the candidate who carried Minas has won every presidential race since 1989. It casts {share} of the national vote and was close on October 4 ({oct4})." },
+  { id: "mg41238", kind: "mun", uf: "mg", nm: "Belo Horizonte", type: "Capital",
+    why: "The largest city in Minas. How its urban vote breaks sets the tone for the bellwether state around it." },
+  { id: "sp71072", kind: "mun", uf: "sp", nm: "São Paulo (city)", type: "Capital",
+    why: "Brazil's biggest city. Lula carried it on October 4 ({oct4}) while losing the state, so his margin here is his main counterweight in the Southeast." },
+  { id: "sp-int", kind: "int", uf: "sp", cap: "sp71072", nm: "Rest of São Paulo state", type: "Bloc",
+    why: "The single biggest net margin anywhere on October 4: {netwho} came out about {net} votes ahead here. Any shrinking of that lead changes the national math." },
+  { id: "rj60011", kind: "mun", uf: "rj", nm: "Rio de Janeiro (city)", type: "Capital",
+    why: "Brazil's second-largest city and close on October 4 ({oct4}). A shift here moves Rio's statewide margin." },
+  { id: "rj-int", kind: "int", uf: "rj", cap: "rj60011", nm: "Rest of Rio de Janeiro state", type: "Bloc",
+    why: "Outside the capital, the state leaned clearly one way on October 4 ({oct4}), a net of about {net} votes for {netwho}." },
+  { id: "ba", kind: "uf", uf: "ba", nm: "Bahia", type: "State",
+    why: "The largest net margin of any state on October 4: about {net} votes for {netwho}. Both the share and the turnout here matter." },
+  { id: "pe", kind: "uf", uf: "pe", nm: "Pernambuco", type: "State",
+    why: "Lula's home state and a Nordeste anchor ({oct4} on October 4). Turnout here helps decide how much of the region's weight counts." },
+  { id: "ce", kind: "uf", uf: "ce", nm: "Ceará", type: "State",
+    why: "The Nordeste's third-largest electorate, with a net of about {net} votes for {netwho} on October 4." },
+  { id: "pa", kind: "uf", uf: "pa", nm: "Pará", type: "State",
+    why: "The North's largest electorate and narrowly split on October 4 ({oct4}). One of the few big states that could go either way." },
+  { id: "am", kind: "uf", uf: "am", nm: "Amazonas", type: "State",
+    why: "Close on October 4 ({oct4}). In 2022 it moved toward Lula between rounds more than almost any state." },
+  { id: "rs", kind: "uf", uf: "rs", nm: "Rio Grande do Sul", type: "State",
+    why: "The least one-sided state in the South ({oct4}). Porto Alegre went to Lula on October 4 while the interior went to Flávio." },
+  { id: "pr", kind: "uf", uf: "pr", nm: "Paraná", type: "State",
+    why: "One of the biggest net margins on October 4: about {net} votes for {netwho}. Turnout here offsets the Nordeste." },
+  { id: "go", kind: "uf", uf: "go", nm: "Goiás", type: "State",
+    why: "Heart of the Centro-Oeste farm belt ({oct4} on October 4). The region's margin helps balance the Nordeste." },
+];
+const KEY_MUNS = [...new Set(BATTLE.filter(b => b.kind !== "uf").map(b => b.kind === "mun" ? b.id : b.cap))];
+const CODE = "6258", CODE1 = "6257";
 const BASE = "https://resultados.tse.jus.br/oficial/ele2026/";
-const POLL_MS = 30000;
+const POLL_MS = 30000, DRILL_MS = 60000;
 const SMALL = new Set(["al","se","pb","rn","df","es","rj","pe","sc"]);
 const TOTAL_W = Object.values(BENCH.uf).reduce((a, u) => a + u.w, 0);
 
-let round = 2, mapView = "results";
-try { const v = localStorage.getItem("apuracao-view"); if (v === "results" || v === "pace" || v === "counted") mapView = v; } catch (e) {}
-const state = { br: null, ufs: {}, mun: {}, prev: {}, sort: { key: "lever", dir: -1 }, sel: null, timer: null, next: 0 };
+let mapView = null, muView = null;
+try { const v = localStorage.getItem("apuracao-view2"); if (["results","pace","r1","counted"].includes(v)) mapView = v; } catch (e) {}
+const state = { br: null, ufs: {}, mun: {}, prev: {}, sort: { key: "lever", dir: -1 }, sel: null, timer: null, next: 0, q: "", region: "All" };
 
 const $ = id => document.getElementById(id);
 const fmtInt = n => (n == null || isNaN(n)) ? "—" : Math.round(n).toLocaleString("en-US");
@@ -302,15 +372,14 @@ function num(v) {
   const n = Number(s);
   return isNaN(n) ? null : n;
 }
-
 function tidyName(s) {
   s = String(s || "").trim();
   if (!s) return "?";
-  if (s === s.toUpperCase()) s = s.toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\b(Da|De|Do|Dos|Das|E)\b/g, w => w.toLowerCase());
+  if (s === s.toUpperCase()) s = s.toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\b(Da|De|Do|Dos|Das|E|D')\b/g, w => w.toLowerCase());
   return s.replace(/^Flavio\b/, "Flávio");
 }
 
-/* Walk a TSE file and collect every candidate record, whatever the nesting. */
+/* Walk a TSE file and collect every candidate record. */
 function parse(json) {
   const cands = [], seen = new Set();
   (function walk(o, party) {
@@ -335,39 +404,39 @@ function parse(json) {
   cands.forEach(c => { if (c.pct == null) c.pct = validTotal ? c.votes / validTotal * 100 : 0; });
   return { cands, st, ts, pst, valid: validTotal, blank: num(v.vb), nulls: num(v.tvn), dg: json.dg, hg: json.hg };
 }
-
-/* Lula vs Flávio two-candidate view of a parsed file. */
+/* Lula vs Flávio view of a parsed file. a = Lula's share of the two. */
 function duel(d) {
   if (!d) return null;
   const L = (d.cands.find(c => c.n === "13") || {}).votes || 0;
   const F = (d.cands.find(c => c.n === "22") || {}).votes || 0;
-  if (L + F <= 0) return null;
-  return { L, F, a: L / (L + F) * 100, f: Math.min(1, Math.max(0, (d.pst || 0) / 100)) };
+  const f = Math.min(1, Math.max(0, (d.pst || 0) / 100));
+  if (L + F <= 0) return { L, F, a: null, f };
+  return { L, F, a: L / (L + F) * 100, f };
 }
 
-const PALETTE = ["--cx1", "--cx2", "--cx3", "--cx4"];
-const colorMap = {};
-function colorFor(c) {
-  if (!c) return "var(--nodata)";
-  if (c.n === "13") return "var(--c13)";
-  if (c.n === "22") return "var(--c22)";
-  if (!colorMap[c.n]) colorMap[c.n] = "var(" + PALETTE[Object.keys(colorMap).length % PALETTE.length] + ")";
-  return colorMap[c.n];
-}
 const C13 = { n: "13" }, C22 = { n: "22" };
-const nameOf = n => {
-  const c = state.br && state.br.cands.find(x => x.n === n);
-  return c ? c.name : (n === "13" ? "Lula" : "Flávio Bolsonaro");
-};
-const shortOf = n => n === "13" ? "Lula" : n === "22" ? "Flávio" : (nameOf(n).split(" ").slice(-1)[0]);
+const colorFor = c => !c ? "var(--nodata)" : c.n === "13" ? "var(--c13)" : c.n === "22" ? "var(--c22)" : "var(--muted)";
+const shortOf = n => n === "13" ? "Lula" : n === "22" ? "Flávio" : "?";
+const nameOf = n => n === "13" ? "Lula" : "Flávio Bolsonaro";
+const mix = (color, k) => `color-mix(in oklab, ${color} ${k}%, var(--panel))`;
 
-/* Pace: positive = Lula ahead of the tie line, negative = Flávio ahead. */
 function paceChip(p, compact) {
   if (p == null || isNaN(p)) return `<span class="muted">—</span>`;
   if (Math.abs(p) < 0.25) return `<span class="chip even">On the line</span>`;
-  const who = p > 0 ? C13 : C22;
-  const col = colorFor(who);
+  const who = p > 0 ? C13 : C22, col = colorFor(who);
   return `<span class="chip" style="color:${col};background:color-mix(in oklab, ${col} 12%, transparent)">${shortOf(who.n)} +${Math.abs(p).toFixed(1)}${compact ? "" : " pts"}</span>`;
+}
+const tieTxt = b => `Lula ${b.toFixed(1)} · Flávio ${(100 - b).toFixed(1)}`;
+const oct4Txt = s => `Lula ${s.toFixed(1)}%, Flávio ${(100 - s).toFixed(1)}%`;
+
+/* Two-row vote block used on cards and tooltips */
+function voteRows(du, opts = {}) {
+  const has = du && du.a != null && du.f > 0;
+  const row = (c, votes, pct) => `<div class="vrow"><span class="who"><span class="sw" style="background:${colorFor(c)}"></span>${opts.full ? nameOf(c.n) : shortOf(c.n)}</span>
+    <span class="v">${has ? `<b>${pct.toFixed(1)}%</b><span>${fmtInt(votes)}</span>` : `<span class="muted">—</span>`}</span></div>`;
+  let h = row(C13, du && du.L, has ? du.a : 0) + row(C22, du && du.F, has ? 100 - du.a : 0);
+  if (opts.bar) h += `<div class="split thin" aria-hidden="true">${has ? `<i style="width:${du.a}%;background:var(--c13)"></i><i style="width:${100 - du.a}%;background:var(--c22)"></i>` : ""}</div>`;
+  return h;
 }
 
 /* ---------- Transport ---------- */
@@ -376,7 +445,6 @@ const POOL = 4;
 let mcp = null, transport = "pending", hostError = null;
 const workers = Array.from({ length: POOL }, () => ({ tab: null, busy: Promise.resolve() }));
 let rr = 0;
-
 async function initTransport() {
   try { mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null; } catch (e) { mcp = null; }
   transport = mcp ? "browser" : "direct";
@@ -401,12 +469,8 @@ async function browserGet(w, u, retried) {
     if (!m) throw { code: "tool_error", message: "The browser did not report a tab." };
     w.tab = m[1];
   } else {
-    try {
-      await mcp.callTool(HOST, "navigate", { url: u, tabId: w.tab }, { cache: false, signal: timeoutSignal(25000) });
-    } catch (e) {
-      if (e && e.code === "tool_error" && !retried) { w.tab = null; return browserGet(w, u, true); }
-      throw e;
-    }
+    try { await mcp.callTool(HOST, "navigate", { url: u, tabId: w.tab }, { cache: false, signal: timeoutSignal(25000) }); }
+    catch (e) { if (e && e.code === "tool_error" && !retried) { w.tab = null; return browserGet(w, u, true); } throw e; }
   }
   const r = await mcp.callTool(HOST, "get_page_text", { tabId: w.tab, max_chars: 400000 }, { cache: false, signal: timeoutSignal(25000) });
   const t = textOf(r);
@@ -418,17 +482,13 @@ async function browserGet(w, u, retried) {
   if (from < 0 || to < from) return { missing: true };
   try { return JSON.parse(t.slice(from, to + 1)); } catch (e) { return { missing: true }; }
 }
-
-function fileUrl(place) {
-  const code = ROUNDS[round].code, e = "e" + code.padStart(6, "0");
-  const uf = place.slice(0, 2);
-  return `${BASE}${code}/dados/${uf}/${place}-c0001-${e}-u.json`;
+function fileUrl(place, code = CODE) {
+  const e = "e" + code.padStart(6, "0");
+  return `${BASE}${code}/dados/${place.slice(0, 2)}/${place}-c0001-${e}-u.json`;
 }
-async function getJSON(place) {
-  const u = fileUrl(place);
+async function getUrl(u) {
   if (transport === "browser") {
-    try { return await viaBrowser(u); }
-    catch (e) { if (e && e.code) hostError = e; throw e; }
+    try { return await viaBrowser(u); } catch (e) { if (e && e.code) hostError = e; throw e; }
   }
   const r = await fetch(u, { cache: "no-cache" });
   if (r.status === 404 || r.status === 403) return { missing: true };
@@ -441,10 +501,10 @@ function failMessage() {
   if (transport !== "browser") return `This page could not reach the TSE results feed just now. It will try again in 30 seconds. Results are always on the ${OFFICIAL}.`;
   const c = hostError && hostError.code;
   if (c === "server_not_connected" || c === "not_granted" || c === "capability_disabled" || c === "capability_removed")
-    return `Not connected to the TSE here. Inside Claude, this page reads the TSE feed through the Claude desktop app's browser, so open it from the artifact card in the desktop app (not a web browser or the app's browser panel). The public GitHub Pages copy connects to the TSE directly. Results are always on the ${OFFICIAL}.`;
+    return `Not connected to the TSE here. Inside Claude, this page reads the TSE feed through the Claude desktop app's browser, so open it from the artifact card in the desktop app. The public GitHub Pages copy connects to the TSE directly. Results are always on the ${OFFICIAL}.`;
   if (c === "not_in_manifest" || c === "approval_required" || c === "cancelled" || c === "blocked_by_policy")
     return `This page needs your permission to use the Claude app's browser to read the TSE feed. <button type="button" class="btn" id="allow">Allow and load results</button>`;
-  if (c === "tool_error") return `The Claude app's browser could not open the TSE feed (${esc(hostError.message || "tool error")}). If it asks you to allow resultados.tse.jus.br, approve it. Retrying every 30 seconds.`;
+  if (c === "tool_error") return `The Claude app's browser could not open the TSE feed (${esc(hostError.message || "tool error")}). Retrying every 30 seconds.`;
   return `The Claude app's browser did not answer (${esc(c || "no reply")}). Check that the desktop app is open. Retrying every 30 seconds.`;
 }
 
@@ -459,23 +519,17 @@ async function loadInner() {
   clearTimeout(state.timer);
   if (transport === "pending") await initTransport();
   hostError = null;
-  const myRound = round;
   setPill("wait", "Updating");
   let fails = 0;
-  const grab = place => getJSON(place).then(j => [place, j]).catch(e => { fails++; return [place, { error: e }]; });
-  const brP = grab("br");
-  const ufP = UFS.map(grab);
-  const munP = KEY_MUNS.map(grab);
+  const grab = place => getUrl(fileUrl(place)).then(j => [place, j]).catch(() => { fails++; return [place, { error: true }]; });
+  const brP = grab("br"), ufP = UFS.map(grab), munP = KEY_MUNS.map(grab);
   const [, br] = await brP;
-  const ufs = await Promise.all(ufP);
-  const muns = await Promise.all(munP);
-  if (myRound !== round) { setTimeout(load, 0); return; }
+  const ufs = await Promise.all(ufP), muns = await Promise.all(munP);
 
   state.br = (br && !br.error && !br.missing) ? parse(br) : null;
   state.prev = Object.fromEntries(Object.entries(state.ufs).map(([k, v]) => [k, v && v.pst]));
-  state.ufs = {};
-  for (const [uf, j] of ufs) if (j && !j.error && !j.missing) state.ufs[uf] = parse(j);
-  state.mun = {};
+  const okU = ufs.filter(([, j]) => j && !j.error && !j.missing);
+  if (okU.length || !Object.keys(state.ufs).length) { state.ufs = {}; for (const [uf, j] of okU) state.ufs[uf] = parse(j); }
   for (const [k, j] of muns) if (j && !j.error && !j.missing) state.mun[k] = parse(j);
 
   if (!state.br && fails >= UFS.length) {
@@ -484,35 +538,24 @@ async function loadInner() {
     if (allow) allow.addEventListener("click", () => load());
     setPill("err", "Feed unreachable");
   } else if (!state.br) {
-    showNotice("", round === 2
-      ? `The TSE has not published runoff figures yet. Counting starts when polls close at <b>5 PM Brasília (4 PM ET)</b>; this page checks every 30 seconds and fills in on its own. The tie lines below are already set.`
-      : `The TSE file for this round is not available right now. Retrying every 30 seconds.`);
+    showNotice("", `The TSE has not published runoff figures yet. Counting starts when polls close at <b>5 PM Brasília (4 PM ET)</b>; this page checks every 30 seconds and fills in on its own.`);
     setPill("wait", "Awaiting results");
   } else {
     hideNotice();
     const p = state.br.pst || 0;
-    const done = p >= 99.995 || state.br.cands.some(c => c.elected);
-    if (round === 1) setPill("final", "Final · Oct 4");
-    else if (p === 0) setPill("wait", "Awaiting first sections");
-    else if (done) setPill("final", "Count complete");
+    if (p === 0) setPill("wait", "Awaiting first sections");
+    else if (p >= 99.995 || state.br.cands.some(c => c.elected)) setPill("final", "Count complete");
     else setPill("live", "Live count");
   }
   render();
-  schedule(round === 1 && state.br ? 0 : POLL_MS);
+  state.next = Date.now() + POLL_MS;
+  state.timer = setTimeout(load, POLL_MS);
 }
-function schedule(ms) {
-  if (!ms) { state.next = 0; $("cd").textContent = "—"; return; }
-  state.next = Date.now() + ms;
-  state.timer = setTimeout(load, ms);
-}
-setInterval(() => {
-  if (!state.next) return;
-  $("cd").textContent = Math.max(0, Math.round((state.next - Date.now()) / 1000)) + "s";
-}, 500);
-
+setInterval(() => { if (state.next) $("cd").textContent = Math.max(0, Math.round((state.next - Date.now()) / 1000)) + "s"; }, 500);
 function setPill(kind, text) { $("pill").className = "pill " + kind; $("pilltxt").textContent = text; }
 function showNotice(kind, html) { const n = $("notice"); n.className = "notice" + (kind ? " " + kind : ""); n.innerHTML = html; n.hidden = false; }
 function hideNotice() { $("notice").hidden = true; }
+const counting = () => !!(state.br && state.br.pst > 0);
 
 function tseTime(d) {
   if (!d || !d.dg || !d.hg) return "—";
@@ -528,194 +571,158 @@ function tseTime(d) {
 
 /* ---------- Analysis ---------- */
 function analysis() {
-  // Deviation of counted states from their tie lines, weighted by how much of each is counted.
-  let num_ = 0, den = 0;
+  let n = 0, den = 0;
   const per = {};
   for (const uf of UFS) {
     const b = BENCH.uf[uf]; const du = duel(state.ufs[uf]);
     if (!b) continue;
-    if (du && du.f > 0) { per[uf] = { ...du, pace: du.a - b.b }; num_ += b.w * du.f * (du.a - b.b); den += b.w * du.f; }
+    if (du && du.a != null && du.f > 0) { per[uf] = { ...du, pace: du.a - b.b }; n += b.w * du.f * (du.a - b.b); den += b.w * du.f; }
   }
-  const D = den > 0 ? num_ / den : 0;
+  const D = den > 0 ? n / den : 0;
   let P = 0;
   for (const uf of UFS) {
     const b = BENCH.uf[uf]; if (!b) continue;
     const s = per[uf];
-    const p = s ? s.f * s.a + (1 - s.f) * (b.b + D) : b.b + D;
-    P += b.w * p;
+    P += b.w * (s ? s.f * s.a + (1 - s.f) * (b.b + D) : b.b + D);
   }
-  P /= TOTAL_W;
-  return { per, D, P, countedShare: den / TOTAL_W };
+  return { per, D, P: P / TOTAL_W, countedShare: den / TOTAL_W };
+}
+function interiorOf(uf, capKey) {
+  const s = state.ufs[uf], c = state.mun[capKey];
+  if (!s || !c) return null;
+  const get = (d, n) => (d.cands.find(x => x.n === n) || {}).votes || 0;
+  const L = Math.max(0, get(s, "13") - get(c, "13")), F = Math.max(0, get(s, "22") - get(c, "22"));
+  const st = (s.st || 0) - (c.st || 0), ts = (s.ts || 0) - (c.ts || 0);
+  return { cands: [{ n: "13", votes: L }, { n: "22", votes: F }], pst: ts > 0 ? Math.max(0, st / ts * 100) : 0, st, ts };
+}
+function aggregate(ufs) {
+  let L = 0, F = 0, st = 0, ts = 0, w = 0, wb = 0, ws = 0, pn = 0, pd = 0;
+  for (const uf of ufs) {
+    const b = BENCH.uf[uf]; const d = state.ufs[uf]; const du = duel(d);
+    w += b.w; wb += b.w * b.b; ws += b.w * b.s;
+    if (d) { st += d.st || 0; ts += d.ts || 0; }
+    if (du) { L += du.L; F += du.F; if (du.a != null && du.f > 0) { pn += b.w * du.f * (du.a - b.b); pd += b.w * du.f; } }
+  }
+  const f = ts ? st / ts : 0;
+  return { du: { L, F, a: L + F ? L / (L + F) * 100 : null, f }, counted: ts ? f * 100 : null, tie: wb / w, oct4: ws / w, pace: pd ? pn / pd : null, share: w / TOTAL_W * 100 };
 }
 
 /* ---------- Rendering ---------- */
-function topTwo(cands) {
-  const byVotes = [...cands].sort((a, b) => b.votes - a.votes);
-  const two = byVotes.slice(0, 2).sort((a, b) => Number(a.n) - Number(b.n));
-  return { two, rest: byVotes.slice(2), leader: byVotes[0] };
-}
-
 function render() {
   const br = state.br;
   $("pst").textContent = br && br.pst != null ? fmtPct(br.pst) : "—";
   $("pstbar").style.width = (br && br.pst || 0) + "%";
   $("upd").textContent = tseTime(br);
-  const A = round === 2 ? analysis() : null;
+  const A = analysis();
   renderBoard(br, A);
-  renderDecide(A);
+  renderRegions();
+  renderBattle();
   renderMap(A);
   renderTable(A);
-  renderDetail(A);
+  if (drill.uf) renderDrill();
 }
 
 function renderBoard(br, A) {
-  const cands = $("cands"), split = $("split"), foot = $("bfoot"), others = $("others"), pace = $("pace");
-  if (!br || !br.cands.length) {
-    const ph = n => `<div class="cand ${n === "22" ? "r" : ""}"><div class="who"><span>${esc(nameOf(n))}</span><span class="tag">${n}</span></div><div class="pct num" style="color:${colorFor({ n })}">—</div><div class="votes">&nbsp;</div></div>`;
-    cands.innerHTML = ph("13") + ph("22");
-    split.innerHTML = ""; foot.innerHTML = ""; others.hidden = true;
-    renderPace(A, null);
-    return;
-  }
-  const { two, rest, leader } = topTwo(br.cands);
-  const counted = (br.pst || 0) > 0;
-  cands.innerHTML = two.map((c, i) => {
-    const isLead = counted && c === leader;
-    const badge = c.elected ? `<span class="lead" style="background:${colorFor(c)}">Eleito</span>` : isLead ? `<span class="lead" style="background:${colorFor(c)}">Leads count</span>` : "";
-    return `<div class="cand ${i ? "r" : ""}">
-      <div class="who">${i ? badge : ""}<span>${esc(c.name)}</span><span class="tag">${esc(c.party)} · ${esc(c.n)}</span>${i ? "" : badge}</div>
-      <div class="pct num" style="color:${colorFor(c)}">${fmtPct(c.pct)}</div>
-      <div class="votes num">${fmtInt(c.votes)} votes</div></div>`;
-  }).join("");
-  const sum = two.reduce((a, c) => a + c.pct, 0) || 1;
-  split.innerHTML = two.map(c => `<i style="width:${round === 2 ? c.pct : c.pct / sum * 100}%;background:${colorFor(c)}"></i>`).join("");
-  split.style.justifyContent = round === 2 ? "space-between" : "flex-start";
+  const L = br && br.cands.find(c => c.n === "13"), F = br && br.cands.find(c => c.n === "22");
+  const counted = counting();
+  const lead = counted && L && F ? (L.votes >= F.votes ? L : F) : null;
+  const block = (c, n, right) => {
+    const badge = c && c.elected ? `<span class="lead" style="background:${colorFor({ n })}">Eleito</span>` : c && c === lead ? `<span class="lead" style="background:${colorFor({ n })}">Leads count</span>` : "";
+    return `<div class="cand ${right ? "r" : ""}">
+      <div class="who">${right ? badge : ""}<span>${esc(c ? c.name : nameOf(n))}</span><span class="tag">${esc(c ? c.party : "")} · ${n}</span>${right ? "" : badge}</div>
+      <div class="pct num" style="color:${colorFor({ n })}">${c && counted ? fmtPct(c.pct) : "—"}</div>
+      <div class="votes num">${c ? fmtInt(c.votes) + " votes" : "&nbsp;"}</div></div>`;
+  };
+  $("cands").innerHTML = block(L, "13", false) + block(F, "22", true);
+  $("split").innerHTML = counted && L && F ? `<i style="width:${L.pct}%;background:var(--c13)"></i><i style="width:${F.pct}%;background:var(--c22)"></i>` : "";
   const bits = [];
-  if (counted) bits.push(`<span>Margin <b class="num">${fmtInt(Math.abs(two[0].votes - two[1].votes))}</b> votes · <b class="num">${Math.abs(two[0].pct - two[1].pct).toFixed(2)} pts</b></span>`);
-  bits.push(`<span>Valid votes <b class="num">${fmtInt(br.valid)}</b></span>`);
-  if (br.blank != null) bits.push(`<span>Blank <b class="num">${fmtInt(br.blank)}</b> · Null <b class="num">${fmtInt(br.nulls)}</b></span>`);
-  foot.innerHTML = bits.join("");
-  if (rest.length) { others.hidden = false; others.innerHTML = rest.map(c => `<span>${esc(c.name)} <b class="num">${fmtPct(c.pct)}</b></span>`).join(""); }
-  else others.hidden = true;
-  renderPace(A, br);
-}
+  if (counted && L && F) bits.push(`<span>Margin <b class="num">${fmtInt(Math.abs(L.votes - F.votes))}</b> votes · <b class="num">${Math.abs(L.pct - F.pct).toFixed(2)} pts</b></span>`);
+  if (br) bits.push(`<span>Valid votes <b class="num">${fmtInt(br.valid)}</b></span>`);
+  if (br && br.blank != null) bits.push(`<span>Blank <b class="num">${fmtInt(br.blank)}</b> · Null <b class="num">${fmtInt(br.nulls)}</b></span>`);
+  bits.push(`<span>Oct 4, two-candidate: <b class="num">${oct4Txt(BENCH.nat.s)}</b></span>`);
+  $("bfoot").innerHTML = bits.join("");
 
-function renderPace(A, br) {
-  const el = $("pace");
-  if (!A) { el.hidden = true; return; }
-  el.hidden = false;
-  const p = br && br.pst || 0;
+  const el = $("pace"), p = br && br.pst || 0;
   if (p < 5) {
     el.innerHTML = `<div><div class="k">Estimated finish</div><div class="v muted">Appears once 5% is counted</div></div>
       <div class="note">States finish counting at different speeds, so the running total can lean one way early. In 2022 Bolsonaro led for much of the night and Lula moved ahead about two-thirds of the way through the count. This estimate adjusts for which states are still out.</div>`;
     return;
   }
-  const lula = A.P, fl = 100 - A.P;
-  const now = duel(br);
-  const lean = now ? A.P - now.a : 0;
+  const now = duel(br), lean = now && now.a != null ? A.P - now.a : 0;
   const leanTxt = Math.abs(lean) < 0.3 ? "The votes still out look similar to those already counted." :
     `The votes still out lean ${lean > 0 ? "Lula" : "Flávio"}'s way: the estimate is ${Math.abs(lean).toFixed(1)} pts more ${lean > 0 ? "Lula" : "Flávio"} than the count so far.`;
   el.innerHTML = `<div><div class="k">Estimated finish · rough guide, not a call</div>
-      <div class="v num"><span style="color:var(--c13)">Lula ${lula.toFixed(1)}%</span> · <span style="color:var(--c22)">Flávio ${fl.toFixed(1)}%</span></div></div>
+      <div class="v num"><span style="color:var(--c13)">Lula ${A.P.toFixed(1)}%</span> · <span style="color:var(--c22)">Flávio ${(100 - A.P).toFixed(1)}%</span></div></div>
     <div>${paceChip(A.D)}<div class="k" style="margin-top:4px">Counted states vs. tie lines</div></div>
     <div class="note">${leanTxt} Built from ${Math.round(A.countedShare * 100)}% of the expected vote. See the method note at the bottom.</div>`;
 }
 
-function aggregate(ufs) {
-  let L = 0, F = 0, st = 0, ts = 0, w = 0, wb = 0, pn = 0, pd = 0;
-  for (const uf of ufs) {
-    const b = BENCH.uf[uf]; const d = state.ufs[uf]; const du = duel(d);
-    w += b.w; wb += b.w * b.b;
-    if (d) { st += d.st || 0; ts += d.ts || 0; }
-    if (du) { L += du.L; F += du.F; if (du.f > 0) { pn += b.w * du.f * (du.a - b.b); pd += b.w * du.f; } }
-  }
-  return { L, F, a: L + F ? L / (L + F) * 100 : null, counted: ts ? st / ts * 100 : null, tie: wb / w, pace: pd ? pn / pd : null, share: w / TOTAL_W * 100 };
-}
-
-function renderDecide(A) {
-  const r2 = round === 2;
-  $("decide").hidden = !r2;
-  if (!r2) return;
+function renderRegions() {
   $("regions").innerHTML = REGIONS.map(R => {
     const g = aggregate(R.ufs);
     return `<div class="reg">
       <div class="nm"><b>${R.nm}</b><span>${g.share.toFixed(0)}% of vote</span></div>
-      <div class="row"><span>Tie line</span><b class="num">Lula ${g.tie.toFixed(1)}%</b></div>
-      <div class="row"><span>Lula now</span><b class="num">${g.a == null ? "—" : g.a.toFixed(1) + "%"}</b></div>
-      <div class="row"><span>Counted</span><b class="num">${g.counted == null ? "—" : g.counted.toFixed(1) + "%"}</b></div>
-      <div class="mini"><i style="width:${g.counted || 0}%"></i></div>
+      ${voteRows(g.du, { bar: true })}
+      <div class="kv"><span>Counted</span><b class="num">${g.counted == null ? "—" : g.counted.toFixed(1) + "%"}</b></div>
+      <div class="kv"><span>Tie line</span><b class="num">${tieTxt(g.tie)}</b></div>
+      <div class="kv"><span>Oct 4</span><span class="num">${oct4Txt(g.oct4)}</span></div>
       <div>${g.pace == null ? `<span class="chip even">Not counted yet</span>` : paceChip(g.pace)}</div></div>`;
   }).join("");
-
-  // Key places: cities + interiors (state minus capital)
-  $("khead").innerHTML = `<th scope="col">Place</th><th scope="col">Counted</th><th scope="col">Oct 4</th><th scope="col">Tie line</th><th scope="col">Lula now</th><th scope="col">Pace</th>`;
-  const rows = [];
-  const pushRow = (label, uf, b, d, sub, interior) => {
-    const du = d ? duel(d) : null;
-    const cnt = d ? d.pst : null;
-    const pace = du && du.f > 0 ? du.a - b.b : null;
-    rows.push(`<tr class="${sub ? "sub" : ""}"><td>${esc(label)}<span class="uf">${uf.toUpperCase()}</span></td>
-      <td class="num">${cnt == null ? "—" : fmtPct(cnt, 1)}</td>
-      <td class="num">${b.s.toFixed(1)}%</td>
-      <td class="num">${b.b.toFixed(1)}%</td>
-      <td class="num">${du && du.f > 0 ? du.a.toFixed(1) + "%" : "—"}</td>
-      <td>${pace == null ? `<span class="muted">—</span>` : paceChip(pace, true)}</td></tr>`);
-  };
-  for (const k of KEY_MUNS) {
-    const m = BENCH.mun[k];
-    pushRow(m.nm, m.uf, m, state.mun[k], false);
-    const I = BENCH.interior[m.uf];
-    if (I && I.cap === k) pushRow(`Rest of ${NAMES[m.uf]}`, m.uf, I, interiorOf(m.uf, k), true);
-  }
-  $("kbody").innerHTML = rows.join("");
-
-  // What to watch, from the benchmark data
-  const mg = BENCH.uf.mg, sp = BENCH.uf.sp, ne = aggregate(REGIONS[0].ufs);
-  const pct = uf => (BENCH.uf[uf].w / TOTAL_W * 100).toFixed(0);
-  const live = uf => { const du = duel(state.ufs[uf]); return du && du.f > 0 ? ` Now: ${paceChip(du.a - BENCH.uf[uf].b)}` : ""; };
-  $("watch").innerHTML = [
-    `<li><b>Minas Gerais</b><span>The state's winner has won every presidential race since 1989. Lula's tie line is ${mg.b.toFixed(1)}%; he took ${mg.s.toFixed(1)}% of the two-candidate vote there on Oct 4.${live("mg")}</span></li>`,
-    `<li><b>São Paulo</b><span>${pct("sp")}% of the national vote. Each point of swing moves the national margin by about ${fmtK(sp.w * 0.02)} votes. Lula's tie line: ${sp.b.toFixed(1)}% statewide, ${BENCH.mun.sp71072.b.toFixed(1)}% in the capital, ${BENCH.interior.sp.b.toFixed(1)}% in the rest of the state.${live("sp")}</span></li>`,
-    `<li><b>Nordeste margin and turnout</b><span>${ne.share.toFixed(0)}% of the vote. Lula needs about ${ne.tie.toFixed(1)}% here, and a lower turnout than Oct 4 would shrink the region's weight even if his share holds.</span></li>`,
-    `<li><b>Rio de Janeiro and the South</b><span>Flávio's strongest large states. His tie-line shares: Rio ${(100 - BENCH.uf.rj.b).toFixed(1)}%, Paraná ${(100 - BENCH.uf.pr.b).toFixed(1)}%, Rio Grande do Sul ${(100 - BENCH.uf.rs.b).toFixed(1)}%, Santa Catarina ${(100 - BENCH.uf.sc.b).toFixed(1)}%.${live("rj")}</span></li>`,
-    `<li><b>Counting order</b><span>The South and Southeast tend to report faster than the North and Northeast, so watch the estimated finish and the pace chips, not just who leads the running total.</span></li>`,
-  ].join("");
 }
 
-function interiorOf(uf, capKey) {
-  const s = state.ufs[uf], c = state.mun[capKey];
-  if (!s || !c) return null;
-  const get = (d, n) => (d.cands.find(x => x.n === n) || {}).votes || 0;
-  const L = get(s, "13") - get(c, "13"), F = get(s, "22") - get(c, "22");
-  const st = (s.st || 0) - (c.st || 0), ts = (s.ts || 0) - (c.ts || 0);
-  return { cands: [{ n: "13", votes: Math.max(0, L) }, { n: "22", votes: Math.max(0, F) }], pst: ts > 0 ? st / ts * 100 : 0, st, ts };
+function battleData(b) {
+  if (b.kind === "uf") { const B = BENCH.uf[b.uf], d = state.ufs[b.uf]; return { B, d, du: duel(d) }; }
+  if (b.kind === "mun") { const B = BENCH.mun[b.id], d = state.mun[b.id]; return { B, d, du: duel(d) }; }
+  const B = BENCH.interior[b.uf], d = interiorOf(b.uf, b.cap); return { B, d, du: duel(d) };
+}
+function fillWhy(b, B) {
+  const net = Math.abs(B.w * (2 * B.s / 100 - 1));
+  return b.why.replace("{share}", (B.w / TOTAL_W * 100).toFixed(0) + "%").replace("{oct4}", oct4Txt(B.s))
+    .replace("{net}", fmtK(net)).replace("{netwho}", B.s >= 50 ? "Lula" : "Flávio");
+}
+function renderBattle() {
+  $("battle").innerHTML = BATTLE.map(b => {
+    const { B, d, du } = battleData(b);
+    const live = du && du.a != null && du.f > 0;
+    const margin = live ? du.L - du.F : null;
+    return `<article class="bcard">
+      <div class="top"><h3>${esc(b.nm)}</h3><span class="kind">${b.type} · ${b.uf.toUpperCase()}</span></div>
+      <p class="why">${esc(fillWhy(b, B))}</p>
+      <div class="live">
+        ${voteRows(du, { bar: true })}
+        <div class="kv"><span>Counted</span><b class="num">${d && d.pst != null ? fmtPct(d.pst, 1) : "—"}</b></div>
+        <div class="kv"><span>Margin</span><b class="num">${margin == null ? "—" : `${margin >= 0 ? "Lula" : "Flávio"} +${fmtInt(Math.abs(margin))}`}</b></div>
+        <div class="kv"><span>Pace vs. tie line</span>${live ? paceChip(du.a - B.b) : `<span class="muted">—</span>`}</div>
+      </div>
+      <div class="foot">
+        <span>Tie line: <b class="num">${tieTxt(B.b)}</b></span>
+        <span>Oct 4: <span class="num">${oct4Txt(B.s)}</span>${B.r22 != null ? ` · 2022 runoff: <span class="num">Lula ${B.r22.toFixed(1)}%</span>` : ""}</span>
+      </div></article>`;
+  }).join("");
 }
 
-/* Map */
+/* National map */
 const LEAD_BANDS = [[0, 28], [2, 45], [5, 62], [10, 80], [20, 100]];
 const PACE_BANDS = [[0.25, 25], [1, 42], [2.5, 60], [5, 78], [8, 96]];
-function mix(color, k) { return `color-mix(in oklab, ${color} ${k}%, var(--panel))`; }
-function fillFor(uf, A) {
-  const d = state.ufs[uf];
-  if (mapView === "counted") {
-    if (!d || !(d.pst > 0)) return "var(--nodata)";
-    return mix("var(--ink)", Math.round(12 + d.pst * 0.7));
-  }
-  if (mapView === "pace" && round === 2) {
-    const s = A && A.per[uf];
-    if (!s) return "var(--nodata)";
-    const p = s.pace, m = Math.abs(p);
-    if (m < 0.25) return mix("var(--muted)", 30);
-    let k = 25; for (const [t, v] of PACE_BANDS) if (m >= t) k = v;
-    return mix(p > 0 ? "var(--c13)" : "var(--c22)", k);
-  }
-  if (!d || !d.cands.length || !(d.pst > 0)) return "var(--nodata)";
-  const s = [...d.cands].sort((a, b) => b.votes - a.votes);
-  const mg = s[0].pct - (s[1] ? s[1].pct : 0);
-  let k = 28; for (const [t, v] of LEAD_BANDS) if (mg >= t) k = v;
-  return mix(colorFor(s[0]), k);
+function leadFill(a) {
+  if (a == null) return "var(--nodata)";
+  const m = Math.abs(2 * a - 100); let k = 28; for (const [t, v] of LEAD_BANDS) if (m >= t) k = v;
+  return mix(a >= 50 ? "var(--c13)" : "var(--c22)", k);
 }
-
+function paceFill(p) {
+  if (p == null) return "var(--nodata)";
+  const m = Math.abs(p); if (m < 0.25) return mix("var(--muted)", 30);
+  let k = 25; for (const [t, v] of PACE_BANDS) if (m >= t) k = v;
+  return mix(p > 0 ? "var(--c13)" : "var(--c22)", k);
+}
+function currentView() { return mapView || (counting() ? "results" : "r1"); }
+function fillFor(uf, A, view) {
+  const d = state.ufs[uf], du = duel(d), b = BENCH.uf[uf];
+  if (view === "r1") return b ? leadFill(b.s) : "var(--nodata)";
+  if (view === "counted") return d && d.pst > 0 ? mix("var(--ink)", Math.round(12 + d.pst * 0.7)) : "var(--nodata)";
+  if (view === "pace") return A.per[uf] ? paceFill(A.per[uf].pace) : "var(--nodata)";
+  return du && du.a != null && du.f > 0 ? leadFill(du.a) : "var(--nodata)";
+}
 let mapBuilt = false;
 function buildMap() {
   const svg = $("map");
@@ -725,139 +732,287 @@ function buildMap() {
   for (const uf in GEO.c) { const [x, y] = GEO.c[uf]; h += `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" class="${SMALL.has(uf) ? "sm" : ""}">${uf.toUpperCase()}</text>`; }
   svg.innerHTML = h;
   svg.querySelectorAll("path.uf").forEach(p => {
-    p.addEventListener("mousemove", ev => showTip(p.dataset.uf, ev));
+    p.addEventListener("mousemove", ev => showTip($("tip"), $("mapbox"), stateTip(p.dataset.uf), ev));
     p.addEventListener("mouseleave", () => { $("tip").hidden = true; });
-    p.addEventListener("click", () => select(p.dataset.uf));
+    p.addEventListener("click", () => openState(p.dataset.uf));
   });
   mapBuilt = true;
 }
-
+function legendFor(view, el) {
+  const ramp = (c, bands) => `<span class="ramp">${bands.map(([, v]) => `<i style="background:${mix(c, v)}"></i>`).join("")}</span>`;
+  const none = `<span class="ramp"><i style="background:var(--nodata)"></i></span><span>No votes counted</span>`;
+  if (view === "pace") el.innerHTML = ramp("var(--c13)", PACE_BANDS) + `<span>Lula ahead of tie line</span>` + ramp("var(--c22)", PACE_BANDS) + `<span>Flávio ahead of tie line</span><span>Light = under 1 pt · dark = 8+ pts</span>` + none;
+  else if (view === "counted") el.innerHTML = `<span class="ramp">${[20, 50, 80].map(v => `<i style="background:${mix("var(--ink)", Math.round(12 + v * 0.7))}"></i>`).join("")}</span><span>Darker = more of the state counted</span>`;
+  else el.innerHTML = ramp("var(--c13)", LEAD_BANDS) + `<span>Lula ${view === "r1" ? "led Oct 4" : "leads"}</span>` + ramp("var(--c22)", LEAD_BANDS) + `<span>Flávio ${view === "r1" ? "led Oct 4" : "leads"}</span><span>Light = under 2 pts · dark = 20+ pts</span>` + (view === "r1" ? "" : none);
+}
 function renderMap(A) {
   if (!mapBuilt) buildMap();
-  document.querySelectorAll("[data-view]").forEach(b => {
-    b.setAttribute("aria-pressed", b.dataset.view === mapView);
-    if (b.dataset.view === "pace") b.hidden = round !== 2;
-  });
-  if (mapView === "pace" && round !== 2) mapView = "results";
+  const view = currentView();
+  document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === view));
   document.querySelectorAll("#map path.uf").forEach(p => {
     const uf = p.dataset.uf, d = state.ufs[uf];
-    const fill = fillFor(uf, A);
+    const fill = fillFor(uf, A, view);
     if (p.getAttribute("fill") !== fill) p.setAttribute("fill", fill);
     if (d && state.prev[uf] != null && d.pst !== state.prev[uf]) { p.classList.remove("flash"); void p.getBBox(); p.classList.add("flash"); }
-    p.classList.toggle("sel", state.sel === uf);
+    p.classList.toggle("sel", drill.uf === uf);
   });
-  const leg = $("legend");
-  if (mapView === "pace") {
-    leg.innerHTML = [C13, C22].map(c => `<span class="ramp">${PACE_BANDS.map(([, v]) => `<i style="background:${mix(colorFor(c), v)}"></i>`).join("")}</span><span>${shortOf(c.n)} ahead of tie line</span>`).join("")
-      + `<span>Light = under 1 pt · dark = 8+ pts</span><span class="ramp"><i style="background:var(--nodata)"></i></span><span>Not counted</span>`;
-  } else if (mapView === "counted") {
-    leg.innerHTML = `<span class="ramp">${[20, 50, 80].map(v => `<i style="background:${mix("var(--ink)", Math.round(12 + v * 0.7))}"></i>`).join("")}</span><span>Darker = more of the state counted</span>`;
-  } else {
-    const br = state.br;
-    const two = br && br.cands.length ? topTwo(br.cands).two : [C13, C22];
-    leg.innerHTML = two.map(c => `<span class="ramp">${LEAD_BANDS.map(([, v]) => `<i style="background:${mix(colorFor(c), v)}"></i>`).join("")}</span><span>${shortOf(c.n)} leads</span>`).join("")
-      + `<span>Light = under 2 pts · dark = 20+ pts</span><span class="ramp"><i style="background:var(--nodata)"></i></span><span>Not counted</span>`;
-  }
+  legendFor(view, $("legend"));
 }
-
-function placeLines(d, b) {
-  let h = "";
-  if (d && d.cands.length) {
-    const s = [...d.cands].sort((x, y) => y.votes - x.votes).slice(0, round === 2 ? 2 : 4);
-    h += s.map(c => `<div class="row"><span><span class="sw" style="background:${colorFor(c)}"></span>${esc(c.name)}</span><b class="num">${fmtPct(c.pct)}</b></div>`).join("");
+function placeTip(title, d, B, extra) {
+  const du = duel(d), live = du && du.a != null && du.f > 0;
+  let h = `<h4>${esc(title)}</h4>` + voteRows(du, { full: true });
+  if (B) {
+    h += `<div class="kv"><span>Pace</span>${live ? paceChip(du.a - B.b) : `<span class="muted">—</span>`}</div>`;
+    h += `<div class="kv"><span>Tie line</span><span class="num">${tieTxt(B.b)}</span></div>`;
+    h += `<div class="kv"><span>Oct 4</span><span class="num">${oct4Txt(B.s)}</span></div>`;
+    if (B.r22 != null) h += `<div class="kv"><span>2022 runoff</span><span class="num">Lula ${B.r22.toFixed(1)}%</span></div>`;
   }
-  if (round === 2 && b) {
-    const du = duel(d);
-    h += `<div class="row"><span>Tie line (Lula)</span><b class="num">${b.b.toFixed(1)}%</b></div>`;
-    h += `<div class="row"><span>Pace</span>${du && du.f > 0 ? paceChip(du.a - b.b) : `<span class="muted">—</span>`}</div>`;
-    h += `<div class="row"><span>Lula, Oct 4</span><span class="num">${b.s.toFixed(1)}%</span></div>`;
-    if (b.r22 != null) h += `<div class="row"><span>Lula, 2022 runoff</span><span class="num">${b.r22.toFixed(1)}%</span></div>`;
-  }
+  h += `<div class="sub">${d && d.pst != null ? fmtPct(d.pst, 1) + " counted" : "No votes counted yet"}${extra || ""}</div>`;
   return h;
 }
-
-function showTip(uf, ev) {
-  const tip = $("tip"), box = $("mapbox").getBoundingClientRect();
-  const d = state.ufs[uf];
-  tip.innerHTML = `<h3>${NAMES[uf]}</h3>` + placeLines(d, BENCH.uf[uf]) + `<div class="sub">${d ? fmtPct(d.pst) + " counted · " + fmtInt(d.valid) + " valid" : "No votes counted yet"}</div>`;
-  tip.hidden = false;
-  let x = ev.clientX - box.left + 14, y = ev.clientY - box.top + 14;
-  if (x + 250 > box.width) x = Math.max(4, ev.clientX - box.left - 260);
-  if (y + 190 > box.height) y = Math.max(4, ev.clientY - box.top - 190);
+const stateTip = uf => placeTip(NAMES[uf], state.ufs[uf], BENCH.uf[uf], " · click for cities");
+function showTip(tip, box, html, ev) {
+  const r = box.getBoundingClientRect();
+  tip.innerHTML = html; tip.hidden = false;
+  const tw = tip.offsetWidth || 240, th = tip.offsetHeight || 200;
+  let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 14;
+  if (x + tw > r.width) x = Math.max(4, ev.clientX - r.left - tw - 10);
+  if (y + th > r.height) y = Math.max(4, ev.clientY - r.top - th - 10);
   tip.style.left = x + "px"; tip.style.top = y + "px";
 }
 
-function select(uf) { state.sel = state.sel === uf ? null : uf; const A = round === 2 ? analysis() : null; renderMap(A); renderTable(A); renderDetail(A); }
-
-function renderDetail() {
-  const el = $("detail"), uf = state.sel;
-  if (!uf) { el.hidden = true; return; }
+/* ---------- City drill-down ---------- */
+const drill = { uf: null, list: null, geo: {}, r1: {}, r2: {}, loading: false, done: 0, total: 0, timer: null, q: "", sort: { key: "w", dir: -1 }, sel: null, gen: 0 };
+let muConfig = null;
+async function getConfig() {
+  if (muConfig) return muConfig;
+  const j = await getUrl(`${BASE}${CODE}/config/mun-e${CODE.padStart(6, "0")}-cm.json`);
+  muConfig = {};
+  for (const a of (j.abr || [])) muConfig[a.cd] = (a.mu || []).map(m => ({ cd: m.cd, cdi: m.cdi, nm: tidyName(m.nm), cap: m.c === "s" }));
+  return muConfig;
+}
+async function pool(items, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = items[i++]; try { await fn(k); } catch (e) {} } }));
+}
+function openState(uf) {
+  if (uf === "zz") return;
+  if (drill.uf === uf) { $("drill").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+  clearTimeout(drill.timer);
+  Object.assign(drill, { uf, list: null, r1: {}, r2: {}, done: 0, total: 0, sel: null, q: "", gen: drill.gen + 1 });
+  renderMap(analysis()); renderTable(analysis());
+  renderDrill();
+  loadDrill(true);
+  if (window.matchMedia("(max-width: 960px)").matches) $("drill").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function closeState() {
+  clearTimeout(drill.timer);
+  Object.assign(drill, { uf: null, list: null, gen: drill.gen + 1 });
+  $("crumb").textContent = "Brasil"; $("drilltitle").textContent = "Every city"; $("muviews").hidden = true;
+  $("drillbody").innerHTML = `<div class="empty">Click any state on the map or in the table to see all of its municipalities, live.</div>`;
+  renderMap(analysis()); renderTable(analysis());
+}
+async function loadDrill(first) {
+  const uf = drill.uf, gen = drill.gen;
+  if (!uf) return;
+  if (transport === "browser") { renderDrill(); return; }
+  drill.loading = true; renderDrill();
+  try {
+    const [cfg, geo] = await Promise.all([getConfig(), drill.geo[uf] ? drill.geo[uf] : fetch(`munigeo/${uf}.json`).then(r => r.ok ? r.json() : null).catch(() => null)]);
+    if (gen !== drill.gen) return;
+    drill.geo[uf] = geo;
+    drill.list = cfg[uf] || [];
+    const todo = drill.list;
+    drill.total = todo.length * (first ? 2 : 1); drill.done = 0;
+    let lastPaint = 0;
+    const tick = () => { drill.done++; const now = Date.now(); if (now - lastPaint > 400) { lastPaint = now; if (gen === drill.gen) renderDrill(); } };
+    if (first) {
+      await pool(todo, 10, async m => {
+        if (drill.r1[m.cd] || gen !== drill.gen) { tick(); return; }
+        const j = await getUrl(fileUrl(uf + m.cd, CODE1)).catch(() => null);
+        if (j && !j.missing && gen === drill.gen) drill.r1[m.cd] = parse(j);
+        tick();
+      });
+    }
+    await pool(todo, 10, async m => {
+      if (gen !== drill.gen) return;
+      const j = await getUrl(fileUrl(uf + m.cd, CODE)).catch(() => null);
+      if (j && !j.missing && gen === drill.gen) drill.r2[m.cd] = parse(j);
+      tick();
+    });
+  } finally {
+    if (gen === drill.gen) {
+      drill.loading = false; renderDrill();
+      drill.timer = setTimeout(() => loadDrill(false), DRILL_MS);
+    }
+  }
+}
+function muRows() {
+  const uf = drill.uf, rel = BENCH.uf[uf] ? BENCH.uf[uf].rel : 0, c = BENCH.nat.c;
+  return (drill.list || []).map(m => {
+    const d1 = drill.r1[m.cd], d2 = drill.r2[m.cd];
+    const o = duel(d1), du = duel(d2);
+    const s = o && o.a != null ? o.a : null;
+    const B = s != null ? { s, b: s + rel + c, w: o.L + o.F } : null;
+    const live = du && du.a != null && du.f > 0;
+    return { m, d: d2, du, B, live, nm: m.nm, w: B ? B.w : 0, pst: d2 ? d2.pst : null, L: du ? du.L : null, F: du ? du.F : null,
+      a: live ? du.a : null, b: live ? 100 - du.a : null, pace: live && B ? du.a - B.b : null, oct4: s };
+  });
+}
+function muFill(r, view) {
+  if (view === "r1") return r.oct4 != null ? leadFill(r.oct4) : "var(--nodata)";
+  if (view === "pace") return paceFill(r.pace);
+  return r.live ? leadFill(r.a) : "var(--nodata)";
+}
+function renderDrill() {
+  const uf = drill.uf; if (!uf) return;
+  $("crumb").innerHTML = `<button type="button" id="back">Brasil</button> › ${esc(REGION_OF[uf] || "")}`;
+  $("back").addEventListener("click", closeState);
+  $("drilltitle").textContent = NAMES[uf];
+  const body = $("drillbody");
+  if (transport === "browser") {
+    $("muviews").hidden = true;
+    body.innerHTML = `<div class="empty">City-by-city results load on the public GitHub Pages version of this map, which reads the TSE feed directly.</div>`;
+    return;
+  }
+  const view = muView || (counting() ? "results" : "r1");
+  $("muviews").hidden = false;
+  document.querySelectorAll("[data-mview]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mview === view));
+  const geo = drill.geo[uf];
+  const rows = muRows();
+  if (!body.querySelector("#muwrap") || body.dataset.uf !== uf) {
+    body.dataset.uf = uf;
+    body.innerHTML = `<div class="loadbar" id="muload"><i></i></div>
+      <div class="mapbox" id="mubox"><svg class="map" id="mumap" role="img" aria-label="Map of ${esc(NAMES[uf])}'s municipalities"></svg><div class="tip" id="mutip" hidden></div></div>
+      <div class="legend" id="mulegend"></div>
+      <div class="statsum" id="musum"></div>
+      <div class="tools" style="margin-top:12px"><input type="search" id="muq" placeholder="Find a city" aria-label="Find a city"></div>
+      <div class="tablewrap tall" id="muwrap"><table><thead><tr id="muhead"></tr></thead><tbody id="mubody"></tbody></table></div>`;
+    $("muq").addEventListener("input", e => { drill.q = e.target.value; renderMuTable(); });
+    drill.built = false;
+  }
+  const lb = $("muload");
+  lb.hidden = !drill.loading;
+  lb.firstElementChild.style.width = drill.total ? (drill.done / drill.total * 100) + "%" : "8%";
+  const svg = $("mumap");
+  const map = Object.fromEntries(rows.map(r => [r.m.cd, r]));
+  drill.rowmap = map;
+  if (svg && geo && !drill.built) {
+    svg.setAttribute("viewBox", `-4 -4 ${geo.w + 8} ${geo.h + 8}`);
+    const byCdi = {}; (drill.list || []).forEach(m => byCdi[m.cdi] = m.cd);
+    let h = "";
+    for (const cdi in geo.p) h += `<path class="mu" data-cdi="${cdi}" data-cd="${byCdi[cdi] || ""}" d="${geo.p[cdi]}" fill="var(--nodata)"></path>`;
+    svg.innerHTML = h;
+    svg.querySelectorAll("path.mu").forEach(p => {
+      p.addEventListener("mousemove", ev => { const r = drill.rowmap && drill.rowmap[p.dataset.cd]; if (r) showTip($("mutip"), $("mubox"), muTip(r), ev); });
+      p.addEventListener("mouseleave", () => { $("mutip").hidden = true; });
+      p.addEventListener("click", () => { drill.sel = drill.sel === p.dataset.cd ? null : p.dataset.cd; renderDrill(); });
+    });
+    drill.built = !!drill.list;
+  } else if (svg && geo === null) {
+    svg.outerHTML = `<div class="empty">City boundaries are not available here; the table below still has every city.</div>`;
+  }
+  if ($("mumap")) $("mumap").querySelectorAll("path.mu").forEach(p => {
+    const r = map[p.dataset.cd]; const f = r ? muFill(r, view) : "var(--nodata)";
+    if (p.getAttribute("fill") !== f) p.setAttribute("fill", f);
+    p.classList.toggle("sel", drill.sel === p.dataset.cd);
+  });
+  legendFor(view, $("mulegend"));
   const d = state.ufs[uf];
-  el.hidden = false;
-  el.innerHTML = `<div class="row"><b>${NAMES[uf]}</b><span class="num">${d ? fmtPct(d.pst) + " counted" : "Not counted yet"}</span></div>` + placeLines(d, BENCH.uf[uf]);
+  $("musum").innerHTML = voteRows(duel(d), { full: true, bar: true }) +
+    `<div class="kv"><span>Counted statewide</span><b class="num">${d && d.pst != null ? fmtPct(d.pst, 1) : "—"}</b></div>
+     <div class="kv"><span>Cities</span><b class="num">${rows.length || "—"}</b></div>
+     <div class="kv"><span>Cities led</span><b class="num">${rows.some(r => r.live) ? `Lula ${rows.filter(r => r.live && r.a >= 50).length} · Flávio ${rows.filter(r => r.live && r.a < 50).length}` : "—"}</b></div>`;
+  renderMuTable();
+}
+function muTip(r) {
+  return placeTip(r.nm + (r.m.cap ? " (capital)" : ""), r.d, r.B, r.B ? ` · Oct 4 two-candidate votes ${fmtInt(r.B.w)}` : "");
+}
+function renderMuTable() {
+  if (!$("muhead")) return;
+  const cols = [["nm", "City"], ["pst", "Counted"], ["L", "Lula"], ["a", "Lula %"], ["F", "Flávio"], ["b", "Flávio %"], ["pace", "Pace"], ["oct4", "Oct 4 Lula"], ["w", "Oct 4 votes"]];
+  const S = drill.sort;
+  $("muhead").innerHTML = cols.map(([k, l]) => `<th scope="col" class="${k === "L" || k === "a" ? "l13" : k === "F" || k === "b" ? "l22" : ""}"><button type="button" data-mk="${k}" ${S.key === k ? `aria-sort="${S.dir > 0 ? "ascending" : "descending"}"` : ""}>${l}${S.key === k ? (S.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("");
+  $("muhead").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.mk; drill.sort = S.key === k ? { key: k, dir: -S.dir } : { key: k, dir: k === "nm" ? 1 : -1 }; renderMuTable();
+  }));
+  const q = drill.q.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  let rows = muRows().filter(r => !q || r.nm.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").includes(q));
+  rows.sort((x, y) => {
+    let vx = x[S.key], vy = y[S.key];
+    if (S.key === "pace") { vx = vx == null ? null : Math.abs(vx); vy = vy == null ? null : Math.abs(vy); }
+    if (vx == null && vy == null) return 0; if (vx == null) return 1; if (vy == null) return -1;
+    return (typeof vx === "string" ? vx.localeCompare(vy, "pt") : vx - vy) * S.dir;
+  });
+  const shown = rows.slice(0, 400);
+  $("mubody").innerHTML = shown.map(r => `<tr class="click ${drill.sel === r.m.cd ? "sel" : ""}" data-cd="${r.m.cd}">
+      <td>${esc(r.nm)}${r.m.cap ? `<span class="uf">capital</span>` : ""}</td>
+      <td class="num">${r.pst == null ? "—" : fmtPct(r.pst, 1)}</td>
+      <td class="num">${r.live ? fmtInt(r.L) : "—"}</td><td class="num">${r.live ? r.a.toFixed(1) + "%" : "—"}</td>
+      <td class="num">${r.live ? fmtInt(r.F) : "—"}</td><td class="num">${r.live ? r.b.toFixed(1) + "%" : "—"}</td>
+      <td>${paceChip(r.pace, true)}</td>
+      <td class="num">${r.oct4 == null ? "—" : r.oct4.toFixed(1) + "%"}</td>
+      <td class="num">${r.w ? fmtInt(r.w) : "—"}</td></tr>`).join("")
+    + (rows.length > shown.length ? `<tr><td colspan="9" class="muted">Showing 400 of ${rows.length}. Search to find a city.</td></tr>` : "")
+    + (!rows.length ? `<tr><td colspan="9" class="muted">${drill.loading ? "Loading cities…" : "No city matches."}</td></tr>` : "");
+  $("mubody").querySelectorAll("tr[data-cd]").forEach(tr => tr.addEventListener("click", () => { drill.sel = drill.sel === tr.dataset.cd ? null : tr.dataset.cd; renderDrill(); }));
 }
 
-/* States table */
+/* ---------- All-states table ---------- */
 function renderTable(A) {
-  const r2 = round === 2;
-  $("statenote").textContent = r2 ? "Default order: how many votes a one-point swing there moves." : "October 4 results by state.";
-  const br = state.br;
-  const order = br && br.cands.length ? topTwo(br.cands).two : [C13, C22];
-  const cols = r2
-    ? [["name", "State"], ["pst", "Counted"], ["a", shortOf(order[0].n)], ["b", shortOf(order[1].n)], ["tie", "Tie line"], ["pace", "Pace"], ["lever", "Votes / pt"]]
-    : [["name", "State"], ["pst", "Counted"], ["a", shortOf(order[0].n)], ["b", shortOf(order[1].n)], ["margin", "Lead"], ["votes", "Valid votes"]];
-  if (!cols.some(c => c[0] === state.sort.key)) state.sort = { key: r2 ? "lever" : "votes", dir: -1 };
-  $("thead").innerHTML = cols.map(([k, l]) => `<th scope="col"><button type="button" data-k="${k}" ${state.sort.key === k ? `aria-sort="${state.sort.dir > 0 ? "ascending" : "descending"}"` : ""}>${esc(l)}${state.sort.key === k ? (state.sort.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("");
+  const cols = [["name", "State"], ["region", "Region"], ["pst", "Counted"], ["L", "Lula votes"], ["a", "Lula %"], ["F", "Flávio votes"], ["b", "Flávio %"], ["margin", "Margin"], ["pace", "Pace"], ["tie", "Tie line"], ["oct4", "Oct 4"], ["r22", "2022 runoff"], ["lever", "Votes / pt"]];
+  const S = state.sort;
+  const cls = k => k === "L" || k === "a" ? "l13" : k === "F" || k === "b" ? "l22" : "";
+  $("thead").innerHTML = cols.map(([k, l]) => `<th scope="col" class="${cls(k)}"><button type="button" data-k="${k}" ${S.key === k ? `aria-sort="${S.dir > 0 ? "ascending" : "descending"}"` : ""}>${l}${S.key === k ? (S.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`).join("");
   $("thead").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
-    const k = b.dataset.k;
-    state.sort = state.sort.key === k ? { key: k, dir: -state.sort.dir } : { key: k, dir: k === "name" ? 1 : -1 };
-    renderTable(round === 2 ? analysis() : null);
+    const k = b.dataset.k; state.sort = S.key === k ? { key: k, dir: -S.dir } : { key: k, dir: k === "name" || k === "region" ? 1 : -1 }; renderTable(analysis());
   }));
-  const pick = (d, c) => d ? (d.cands.find(x => x.n === c.n) || null) : null;
+  const q = state.q.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
   let rows = UFS.map(uf => {
-    const d = state.ufs[uf], b = BENCH.uf[uf];
-    const ca = pick(d, order[0]), cb = pick(d, order[1]);
-    const sorted = d && d.cands.length ? [...d.cands].sort((x, y) => y.votes - x.votes) : [];
-    const counted = d && d.pst > 0;
-    const pace = A && A.per[uf] ? A.per[uf].pace : null;
-    return { uf, d, counted, name: NAMES[uf], pst: d ? d.pst : null, a: counted && ca ? ca.pct : null, b: counted && cb ? cb.pct : null,
-      lead: sorted[0], margin: counted && sorted[1] ? sorted[0].pct - sorted[1].pct : null, votes: d ? d.valid : null,
-      tie: b ? b.b : null, pace, lever: b ? b.w * 0.02 : null };
-  });
-  const k = state.sort.key, dir = state.sort.dir;
+    const d = state.ufs[uf], du = duel(d), b = BENCH.uf[uf];
+    const live = du && du.a != null && du.f > 0;
+    return { uf, name: NAMES[uf], region: REGION_OF[uf], d, du, live, pst: d ? d.pst : null, L: live ? du.L : null, F: live ? du.F : null,
+      a: live ? du.a : null, b: live ? 100 - du.a : null, margin: live ? du.L - du.F : null,
+      pace: A.per[uf] ? A.per[uf].pace : null, tie: b ? b.b : null, oct4: b ? b.s : null, r22: b ? b.r22 : null, lever: b ? b.w * 0.02 : null };
+  }).filter(r => (state.region === "All" || r.region === state.region) && (!q || r.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").includes(q) || r.uf === q));
   rows.sort((x, y) => {
-    let vx = x[k], vy = y[k];
-    if (k === "pace") { vx = vx == null ? null : Math.abs(vx); vy = vy == null ? null : Math.abs(vy); }
+    let vx = x[S.key], vy = y[S.key];
+    if (S.key === "pace" || S.key === "margin") { vx = vx == null ? null : Math.abs(vx); vy = vy == null ? null : Math.abs(vy); }
     if (vx == null && vy == null) return 0; if (vx == null) return 1; if (vy == null) return -1;
-    return (typeof vx === "string" ? vx.localeCompare(vy, "pt") : vx - vy) * dir;
+    return (typeof vx === "string" ? vx.localeCompare(vy, "pt") : vx - vy) * S.dir;
   });
   $("tbody").innerHTML = rows.map(r => {
-    const sw = r.counted && r.lead ? colorFor(r.lead) : "var(--nodata)";
-    const cells = [
-      `<td><span class="sw" style="background:${sw}"></span>${esc(r.name)}<span class="uf">${r.uf.toUpperCase()}</span></td>`,
-      `<td class="num"><span class="cnt">${r.pst == null ? "—" : fmtPct(r.pst, 1)}<span class="mini"><i style="width:${r.pst || 0}%"></i></span></span></td>`,
-      `<td class="num">${r.a == null ? "—" : fmtPct(r.a, 1)}</td>`,
-      `<td class="num">${r.b == null ? "—" : fmtPct(r.b, 1)}</td>`,
-    ];
-    if (r2) {
-      cells.push(`<td class="num">${r.tie == null ? "—" : r.tie.toFixed(1) + "%"}</td>`);
-      cells.push(`<td>${paceChip(r.pace, true)}</td>`);
-      cells.push(`<td class="num">${r.lever == null ? "—" : fmtK(r.lever)}</td>`);
-    } else {
-      cells.push(`<td class="num">${r.counted && r.lead ? `<span style="color:${colorFor(r.lead)};font-weight:600">${esc(shortOf(r.lead.n))}</span> +${r.margin.toFixed(1)}` : "—"}</td>`);
-      cells.push(`<td class="num">${r.counted ? fmtInt(r.votes) : "—"}</td>`);
-    }
-    return `<tr data-uf="${r.uf}" class="click ${state.sel === r.uf ? "sel" : ""}">${cells.join("")}</tr>`;
-  }).join("");
-  $("tbody").querySelectorAll("tr").forEach(tr => tr.addEventListener("click", () => select(tr.dataset.uf)));
+    const sw = r.live ? (r.a >= 50 ? "var(--c13)" : "var(--c22)") : "var(--nodata)";
+    return `<tr data-uf="${r.uf}" class="click ${drill.uf === r.uf ? "sel" : ""}">
+      <td><span class="sw" style="background:${sw}"></span>${esc(r.name)}<span class="uf">${r.uf.toUpperCase()}</span></td>
+      <td class="muted">${esc(r.region)}</td>
+      <td class="num"><span class="cnt">${r.pst == null ? "—" : fmtPct(r.pst, 1)}<span class="mini"><i style="width:${r.pst || 0}%"></i></span></span></td>
+      <td class="num grp">${r.L == null ? "—" : fmtInt(r.L)}</td><td class="num">${r.a == null ? "—" : r.a.toFixed(1) + "%"}</td>
+      <td class="num grp">${r.F == null ? "—" : fmtInt(r.F)}</td><td class="num">${r.b == null ? "—" : r.b.toFixed(1) + "%"}</td>
+      <td class="num grp">${r.margin == null ? "—" : `<span style="color:${r.margin >= 0 ? "var(--c13)" : "var(--c22)"};font-weight:600">${r.margin >= 0 ? "Lula" : "Flávio"}</span> +${fmtInt(Math.abs(r.margin))}`}</td>
+      <td>${paceChip(r.pace, true)}</td>
+      <td class="num">${r.tie == null ? "—" : `${r.tie.toFixed(1)} / ${(100 - r.tie).toFixed(1)}`}</td>
+      <td class="num">${r.oct4 == null ? "—" : `${r.oct4.toFixed(1)} / ${(100 - r.oct4).toFixed(1)}`}</td>
+      <td class="num">${r.r22 == null ? "—" : `${r.r22.toFixed(1)} / ${(100 - r.r22).toFixed(1)}`}</td>
+      <td class="num">${r.lever == null ? "—" : fmtK(r.lever)}</td></tr>`;
+  }).join("") || `<tr><td colspan="13" class="muted">No state matches.</td></tr>`;
+  $("tbody").querySelectorAll("tr[data-uf]").forEach(tr => tr.addEventListener("click", () => openState(tr.dataset.uf)));
 }
 
 /* ---------- Controls ---------- */
-$("refresh").addEventListener("click", () => load());
+$("refresh").addEventListener("click", () => { load(); if (drill.uf && !drill.loading) { clearTimeout(drill.timer); loadDrill(false); } });
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
   mapView = b.dataset.view;
-  try { localStorage.setItem("apuracao-view", mapView); } catch (e) {}
-  renderMap(round === 2 ? analysis() : null);
+  try { localStorage.setItem("apuracao-view2", mapView); } catch (e) {}
+  renderMap(analysis());
+}));
+document.querySelectorAll("[data-mview]").forEach(b => b.addEventListener("click", () => { muView = b.dataset.mview; renderDrill(); }));
+$("q").addEventListener("input", e => { state.q = e.target.value; renderTable(analysis()); });
+$("regfilter").innerHTML = ["All", ...REGIONS.map(R => R.nm), "Exterior"].map(n => `<button type="button" data-reg="${n}" aria-pressed="${n === "All"}">${n}</button>`).join("");
+$("regfilter").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  state.region = b.dataset.reg;
+  $("regfilter").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderTable(analysis());
 }));
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.next && state.next - Date.now() > 5000) load(); });
 
