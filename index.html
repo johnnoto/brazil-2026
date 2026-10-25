@@ -521,7 +521,9 @@ function tseTime(d) {
   if (!yy) return d.hg + " BRT";
   const t = new Date(Date.UTC(yy, mm - 1, dd, h + 3, mi, s || 0));
   const et = t.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", second: "2-digit" });
-  return `${d.hg} BRT · ${et} ET`;
+  const today = new Date().toLocaleDateString("en-GB", { timeZone: "America/Sao_Paulo" });
+  const day = d.dg === today ? "" : t.toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" }) + ", ";
+  return `${day}${d.hg} BRT · ${et} ET`;
 }
 
 /* ---------- Analysis ---------- */
